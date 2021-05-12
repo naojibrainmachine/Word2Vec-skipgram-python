@@ -13,7 +13,7 @@ def load_data(path):
     f=open(path,encoding='utf-8')
     corpus=f.read()
     corpus=corpus.replace('\n','').replace('\r','').replace(' ','').replace('\u3000','')
-    #corpus_chars=corpus[0:30000]
+    corpus_chars=corpus[0:30000]
     corpus_chars=fool.cut(corpus_chars)
     corpus_chars=corpus_chars[0]
 

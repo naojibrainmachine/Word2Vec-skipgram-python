@@ -3,6 +3,7 @@ import collections
 import numpy as np
 import random
 import fool
+import argparse
 from LOADDATA import load_data
 from GENERATOR import generate_batch,init_unigram_table
 
@@ -87,7 +88,7 @@ class skGram:
         output=tf.math.sigmoid(output)
 
         if train_predict=='train':
-            neg_sample=self.neg_sampling(data.shape[0])#负采样
+            neg_sample=self.neg_sampling(data.shape[0],context_to_center)#负采样
 
             small_output,small_labels,sample=self.completeVec_to_negSampling(output,data,labels,context_to_center,neg_sample)#把整个词库大小的输出，转化成只包括5个负样本和一个正样本的形式
             
@@ -106,7 +107,7 @@ class skGram:
         self.optimizer.apply_gradients(zip(grads,params))
 
 
-    def neg_sampling(self,X_num,num=5):
+    def neg_sampling(self,X_num,context_to_center,num=5):
         neg_sample=[]
         for j in range(X_num):
             sample=[]
@@ -152,29 +153,53 @@ class skGram:
 
 
 
+def main():
+    parser = argparse.ArgumentParser(description="输入程序运行必要参数")
+    parser.add_argument('-bs','--batch_size',default=32,type=int)
+    parser.add_argument('-sw','--skip_window',default=2,type=int)
+    parser.add_argument('-es','--embedding_size',default=300,type=int)
+    parser.add_argument('-ep','--epochs',default=10,type=int)
+    parser.add_argument('-dp','--data_path',default='jaychou_lyrics.txt',type=str)
+    parser.add_argument('-lr','--learning_rate',default=1e-3,type=float)
+    parser.add_argument('-ts','--table_size',default=10e8,type=float)
+    parser.add_argument('-test','--test',default=False,type=bool)
+    
+    args = parser.parse_args()
+    
+    batch_size = args.batch_size
+    skip_window = args.skip_window
+    data_path = args.data_path
+    embedding_size = args.embedding_size
+    epochs = args.epochs#训练轮次
+    table_size = args.table_size
+    lr = args.learning_rate
+    
+    data_path="data//"+data_path
 
-
-
-if __name__ == "__main__":
+    
+    #print(batch_size,skip_window,data_path,embedding_size,epochs,table_size)
+    
     def to_oneHot(indices,depth):
         return tf.one_hot(indices, depth)
+    
     clipNorm=1.0#梯度裁剪阈值
-    corpus_indices,char_to_idx,idx_to_char,vocab_size,voca_frequency=load_data("data//jaychou_lyrics.txt")#数据预处理
-    pro_table=init_unigram_table(vocab_size,voca_frequency,idx_to_char,table_size=3*vocab_size)#概率表
-    skg=skGram(batch_size=32,embedding_size=300,vocabulary_size=vocab_size,lr=1e-3,pro_table=pro_table)#实例化skGram对象  
+    corpus_indices,char_to_idx,idx_to_char,vocab_size,voca_frequency=load_data(data_path)#数据预处理
+
+    if(args.test):
+        table_size=3*vocab_size
+    
+    pro_table=init_unigram_table(vocab_size,voca_frequency,idx_to_char,table_size=table_size)#概率表
+    skg=skGram(batch_size=int(batch_size),embedding_size=int(embedding_size),vocabulary_size=vocab_size,lr=lr,pro_table=pro_table)#实例化skGram对象  
     params=skg.get_params()#获得模型参数
     
-    epochs=1000#训练轮次
+    #epochs=10
     
     for i in range(epochs):
         #print(i)
-        data_iter=generate_batch(corpus_indices,8,2)
+        data_iter=generate_batch(corpus_indices,batch_size,skip_window)
         for X,Y in data_iter:
-            #print(type(X))
-            #print(Y)
-            #print(Y[0][2])
-            context_to_center=[]
             
+            context_to_center=[]
             for j in range(Y.shape[0]):
                 ctc={}
                 for k in range(Y.shape[1]):
@@ -208,3 +233,8 @@ if __name__ == "__main__":
     
     print(idx_to_char[tf.math.argmax(output,axis=1,output_type=tf.dtypes.int32)[0].numpy()])
 
+
+
+
+if __name__ == "__main__":
+    main()
