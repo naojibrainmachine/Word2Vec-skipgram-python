@@ -6,6 +6,10 @@ A python program. Skip-gram. Word2Vec.
 关键第三方包：__tensorflow 2.4__、__foolnltk__  
 直接运行skip-gram.py就能够进行训练了。  
 
+例子  
+`skip-gram.py --batch_size=32 --skip_window=3 -embedding_size=300 --test=True --data_path=test.txt`  
+
+
 参考  
 -
 1.skip-gram部分C语言源代码  
